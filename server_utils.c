@@ -1,8 +1,49 @@
 #include "serverGroup.h"
 
-server_t *server_init(int port) {
-	t_server *output = malloc(sizeof(t_server));
-
+t_server *server_init(int port) {
 	struct sockaddr_in serverAddr;
+	bzero(&serverAddr, sizeof(serverAddr));
 
+	t_server *output = malloc(sizeof(t_server));
+	if (!output) exit_error(NULL, 2);
+	serverAddr.sin_addr.s_addr = htonl(127 << 24 | 0 << 16 | 0 << 8 | 1);
+	serverAddr.sin_family = AF_INET;
+	serverAddr.sin_port = htons(port);
+	
+	output->server_socket = socket(AF_INET, SOCK_STREAM, 0);
+	if (output->server_socket == -1)
+		exit_error(NULL, 2);
+
+	output->max_fd = output->server_socket;
+	output->ids_count = 0;
+	FD_ZERO(&(output->all_fds));
+	FD_SET(output->server_socket, &(output->all_fds));
+
+	if (bind(output->server_socket,(const struct sockaddr *)&serverAddr, sizeof(serverAddr)) == -1)
+		exit_error(NULL, output->max_fd);
+	if (listen(output->server_socket, SOMAXCONN) == -1)
+		exit_error(NULL, output->max_fd);
+	return (output);
 }
+
+int accept_client(t_server *server) {
+	server->client_fd = accept(server->server_socket, 0, 0);
+	if (server->client_fd < 0)
+		return (0);
+	if (server->max_fd < server->client_fd)
+		server->max_fd = server->client_fd;
+	FD_SET(server->client_fd, &(server->all_fds));
+	server->clients[server->client_fd].id = (server->ids_count)++;
+	sprintf(server->write_buffer, CLIENT_ACCEPT_MSG, server->clients[server->client_fd].id);
+	send_to_all(server);
+	return (1);
+}
+
+void	send_to_all(t_server *server) {
+	for (int fd = 0; fd <= server->max_fd; fd++)
+		if (FD_ISSET(fd, &(server->write_fds)) && fd != server->client_fd)
+			if (send(fd, server->write_buffer, strlen(server->write_buffer), 0) == -1)
+				continue;
+}
+
+

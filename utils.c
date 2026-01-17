@@ -9,4 +9,5 @@ void	exit_error(char *err_msg, int max_fd) {
 	else putstr(2, err_msg);
 	for (int fd; fd <= max_fd; fd++)
 		close(fd);
+	exit(EXIT_FAILURE);
 }

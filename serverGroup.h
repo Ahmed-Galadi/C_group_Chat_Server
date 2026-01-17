@@ -13,7 +13,10 @@
 #include <limits.h>
 
 # define MAX_CLIENTS 1024
-# define BUFFER_SIZE INT_MAX / 2
+# define BUFFER_SIZE 1000000
+# define CLIENT_ACCEPT_MSG "server: client %d just arrived\n"
+# define CLIENT_LEFT_MSG "server: client %d just left\n"
+# define CLIENT_MSG "client %d: %s\n"
 
 typedef struct s_client {
 	int id;
@@ -40,7 +43,8 @@ void	exit_error(char *err_msg, int max_fd);
 // ------------------- Server functions ----------
 
 t_server *server_init(int port);
-void send_to_all(int excluded_fd);
+void send_to_all(t_server *server);
 void read_and_broadcast(t_server *server);
+int  accept_client(t_server *server);
 
 #endif
