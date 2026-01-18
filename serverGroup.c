@@ -12,15 +12,10 @@ int main(int argc, char *argv[]) {
 			continue;
 		for (int fd = 0; fd <= server->max_fd; fd++) {
 			if (!FD_ISSET(fd, &(server->read_fds))) continue;
-			if (fd == server->server_socket) {
-				if (!accept_client(server))
-					continue;
-			} else{
-				if (!server->clients[fd].is_logged)
-					recv_client_data(server, fd, DATA_RECV_NAME);
-				else
-					recv_client_data(server, fd, BROADCAST_MSG);
-			}
+			if (fd == server->server_socket)
+    			accept_client(server);
+			else
+    			recv_client_data(server, fd);
 		}
 	}
 	return (0);

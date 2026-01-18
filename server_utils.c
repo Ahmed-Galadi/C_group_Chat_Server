@@ -49,9 +49,12 @@ bool accept_client(t_server *s)
 	s->clients[fd].client_fd = fd;
 	s->clients[fd].is_logged = false;
 	s->clients[fd].name[0] = '\0';
+	s->clients[fd].password[0] = '\0';
 	s->clients[fd].msg[0] = '\0';
 
-	send(fd, "Enter Name:\n> ", 14, 0);
+	s->clients[fd].state = WAITING_NAME;
+	send_to_client(fd, "Enter Name:\n> ");
+
 	return (true);
 }
 
@@ -66,7 +69,7 @@ void send_to_all(t_server *s, int sender_fd, char *msg)
 			continue;
 		if (fd == s->server_socket)
 			continue;
-		send(fd, msg, strlen(msg), 0);
+		send_to_client(fd, msg);
 	}
 }
 
@@ -77,40 +80,43 @@ void send_to_client(int fd, char *msg) {
 }
 
 
-bool recv_client_data(t_server *s, int fd, enum recv_flags flag)
+bool recv_client_data(t_server *s, int fd)
 {
 	int n = recv(fd, s->recv_buffer, BUFFER_SIZE - 1, 0);
 	if (n <= 0) {
 		client_left(s, fd);
-		return false;
+		return (false);
 	}
-
 	s->recv_buffer[n] = '\0';
 
 	/* ---- LOGIN PHASE ---- */
-	if (flag == DATA_RECV_NAME) {
-		int i = 0;
-		while (i < n && s->recv_buffer[i] != '\n' && i < MAX_NAME_SIZE - 1)
-		{
-			s->clients[fd].name[i] = s->recv_buffer[i];
-			i++;
+		if (s->clients[fd].state == WAITING_NAME) {
+			int j = 0;
+			for (int j = 0; j < n && s->recv_buffer[j] != '\n' && j < MAX_NAME_SIZE - 1; j++)
+				s->clients[fd].name[j] = s->recv_buffer[j];
+			s->clients[fd].name[j] = '\0';
+			s->clients[fd].state = WAITING_PASS;
+    		send_to_client(fd, "Enter Password:\n> ");
+    		return true;
 		}
-		s->clients[fd].name[i] = '\0';
-
-		if (s->clients[fd].name[0])
-		{
-			s->clients[fd].is_logged = true;
-			s->clients[fd].id = s->clients_count++;
-
-			snprintf(s->write_buffer, BUFFER_SIZE,
-				"server: [%s] joined\n", s->clients[fd].name);
-			send_to_all(s, fd, s->write_buffer);
+		if (s->clients[fd].state == WAITING_PASS) {
+			int i = 0;
+			for (i = 0; i < n && s->recv_buffer[i] != '\n' && i < MAX_PASSWORD_SIZE - 1; i++)
+				s->clients[fd].password[i] = s->recv_buffer[i];
+			s->clients[fd].password[i] = '\0';
+			
+			if (s->clients[fd].name[0] && s->clients[fd].password[0]) {
+				s->clients[fd].is_logged = true;
+				s->clients[fd].id = s->clients_count++;
+				
+				snprintf(s->write_buffer, BUFFER_SIZE, CLIENT_ACCEPT_MSG, s->clients[fd].name);
+				send_to_all(s, fd, s->write_buffer);
+			}
+			return (true);
 		}
-		return true;
-	}
 
 	/* ---- CHAT PHASE ---- */
-	if (flag == BROADCAST_MSG) {
+	if (s->clients[fd].state == LOGGED) {
 		for (int i = 0; i < n; i++) {
 			int j = strlen(s->clients[fd].msg);
 			s->clients[fd].msg[j] = s->recv_buffer[i];
@@ -119,7 +125,7 @@ bool recv_client_data(t_server *s, int fd, enum recv_flags flag)
 			if (s->recv_buffer[i] == '\n')
 			{
 				snprintf(s->write_buffer, BUFFER_SIZE,
-					"[%s]: %s",
+					CLIENT_MSG,
 					s->clients[fd].name,
 					s->clients[fd].msg);
 
@@ -138,7 +144,7 @@ void client_left(t_server *s, int fd)
 	if (s->clients[fd].name[0])
 	{
 		snprintf(s->write_buffer, BUFFER_SIZE,
-			"server: [%s] left\n", s->clients[fd].name);
+			CLIENT_LEFT_MSG, s->clients[fd].name);
 		send_to_all(s, fd, s->write_buffer);
 	}
 

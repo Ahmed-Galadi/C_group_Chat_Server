@@ -15,13 +15,13 @@
 
 # define MAX_CLIENTS 1024
 # define BUFFER_SIZE 10024
-# define CLIENT_ACCEPT_MSG "server: [ %s ] just arrived\n"
+# define CLIENT_ACCEPT_MSG "server: [ %s ] just joined\n"
 # define CLIENT_LEFT_MSG "server: [ %s ] just left\n"
-# define CLIENT_MSG "client %d: %s\n"
+# define CLIENT_MSG "[%s]: %s\n[YOU] => "
 # define MAX_NAME_SIZE 32
 # define MAX_PASSWORD_SIZE 24
 
-enum recv_flags {BROADCAST_MSG, DATA_RECV_NAME, DATA_RECV_PASS};
+enum loggin_state {WAITING_NAME, WAITING_PASS, LOGGED};
 
 typedef struct s_client {
 	int id;
@@ -30,6 +30,7 @@ typedef struct s_client {
 	char msg[BUFFER_SIZE];
 	char password[MAX_PASSWORD_SIZE];
 	bool is_logged;
+	enum loggin_state state;
 } t_client;
 
 typedef struct s_server {
@@ -55,6 +56,6 @@ void send_to_all(t_server *s, int sender_fd, char *msg);
 bool  accept_client(t_server *server);
 void client_left(t_server *server, int client_fd);
 void send_to_client(int fd, char *msg);
-bool recv_client_data(t_server *server, int current_fd, enum recv_flags flag);
+bool recv_client_data(t_server *server, int current_fd);
 
 #endif
