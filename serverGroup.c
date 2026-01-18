@@ -5,10 +5,10 @@ int main(int argc, char *argv[]) {
 
 	t_server *server = server_init(atoi(argv[1]));
 	while (1) {
-		server->read_fds = server->all_fds;
+		server->write_fds = server->read_fds = server->all_fds;
 		if (select(server->max_fd + 1,
 			&(server->read_fds),
-			NULL, 0, 0) < 0)
+			&(server->write_fds), 0, 0) < 0)
 			continue;
 		for (int fd = 0; fd <= server->max_fd; fd++) {
 			if (!FD_ISSET(fd, &(server->read_fds))) continue;

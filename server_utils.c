@@ -1,6 +1,5 @@
 #include "serverGroup.h"
 
-#include "serverGroup.h"
 
 t_server *server_init(int port)
 {
@@ -15,7 +14,7 @@ t_server *server_init(int port)
 	s = malloc(sizeof(t_server));
 	if (!s)
 		exit_error(NULL, 2);
-
+	bzero(s, sizeof(t_server)); 
 	s->server_socket = socket(AF_INET, SOCK_STREAM, 0);
 	if (s->server_socket < 0)
 		exit_error(NULL, 2);
@@ -39,7 +38,10 @@ bool accept_client(t_server *s)
 	int fd = accept(s->server_socket, NULL, NULL);
 	if (fd < 0)
 		return (false);
-
+	if (fd >= MAX_CLIENTS) {
+		close(fd);
+		return false;
+	}
 	FD_SET(fd, &s->all_fds);
 	if (fd > s->max_fd)
 		s->max_fd = fd;
@@ -54,12 +56,20 @@ bool accept_client(t_server *s)
 }
 
 
-void send_to_all(t_server *s, int sender_fd, char *msg) {
-	for (int fd = 0; fd <= s->max_fd; fd++) {
-		if (FD_ISSET(fd, &s->all_fds) && fd != sender_fd)
-			send(fd, msg, strlen(msg), 0);
+void send_to_all(t_server *s, int sender_fd, char *msg)
+{
+	for (int fd = 0; fd <= s->max_fd; fd++)
+	{
+		if (!FD_ISSET(fd, &s->all_fds))
+			continue;
+		if (fd == sender_fd)
+			continue;
+		if (fd == s->server_socket)
+			continue;
+		send(fd, msg, strlen(msg), 0);
 	}
 }
+
 
 
 void send_to_client(int fd, char *msg) {

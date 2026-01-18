@@ -14,7 +14,7 @@
 #include <stdbool.h>
 
 # define MAX_CLIENTS 1024
-# define BUFFER_SIZE 1000000
+# define BUFFER_SIZE 10024
 # define CLIENT_ACCEPT_MSG "server: [ %s ] just arrived\n"
 # define CLIENT_LEFT_MSG "server: [ %s ] just left\n"
 # define CLIENT_MSG "client %d: %s\n"
