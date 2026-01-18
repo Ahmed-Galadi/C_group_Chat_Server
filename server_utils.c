@@ -1,73 +1,140 @@
 #include "serverGroup.h"
 
-t_server *server_init(int port) {
-	struct sockaddr_in serverAddr;
-	bzero(&serverAddr, sizeof(serverAddr));
+#include "serverGroup.h"
 
-	t_server *output = malloc(sizeof(t_server));
-	if (!output) exit_error(NULL, 2);
-	serverAddr.sin_addr.s_addr = htonl(127 << 24 | 0 << 16 | 0 << 8 | 1);
-	serverAddr.sin_family = AF_INET;
-	serverAddr.sin_port = htons(port);
-	
-	output->server_socket = socket(AF_INET, SOCK_STREAM, 0);
-	if (output->server_socket == -1)
+t_server *server_init(int port)
+{
+	struct sockaddr_in addr;
+	t_server *s;
+
+	bzero(&addr, sizeof(addr));
+	addr.sin_family = AF_INET;
+	addr.sin_addr.s_addr = INADDR_ANY;
+	addr.sin_port = htons(port);
+
+	s = malloc(sizeof(t_server));
+	if (!s)
 		exit_error(NULL, 2);
 
-	output->max_fd = output->server_socket;
-	output->ids_count = 0;
-	FD_ZERO(&(output->all_fds));
-	FD_SET(output->server_socket, &(output->all_fds));
+	s->server_socket = socket(AF_INET, SOCK_STREAM, 0);
+	if (s->server_socket < 0)
+		exit_error(NULL, 2);
 
-	if (bind(output->server_socket,(const struct sockaddr *)&serverAddr, sizeof(serverAddr)) == -1)
-		exit_error(NULL, output->max_fd);
-	if (listen(output->server_socket, SOMAXCONN) == -1)
-		exit_error(NULL, output->max_fd);
-	return (output);
+	if (bind(s->server_socket, (struct sockaddr *)&addr, sizeof(addr)) < 0)
+		exit_error(NULL, s->server_socket);
+	if (listen(s->server_socket, SOMAXCONN) < 0)
+		exit_error(NULL, s->server_socket);
+
+	FD_ZERO(&s->all_fds);
+	FD_SET(s->server_socket, &s->all_fds);
+
+	s->max_fd = s->server_socket;
+	s->clients_count = 0;
+	return (s);
 }
 
-int accept_client(t_server *server) {
-	server->client_fd = accept(server->server_socket, 0, 0);
-	if (server->client_fd < 0)
-		return (0);
-	if (server->max_fd < server->client_fd)
-		server->max_fd = server->client_fd;
-	FD_SET(server->client_fd, &(server->all_fds));
-	server->clients[server->client_fd].id = (server->ids_count)++;
-	sprintf(server->write_buffer, CLIENT_ACCEPT_MSG, server->client_fd);
-	send_to_all(server, server->client_fd);
-	return (1);
+
+bool accept_client(t_server *s)
+{
+	int fd = accept(s->server_socket, NULL, NULL);
+	if (fd < 0)
+		return (false);
+
+	FD_SET(fd, &s->all_fds);
+	if (fd > s->max_fd)
+		s->max_fd = fd;
+
+	s->clients[fd].client_fd = fd;
+	s->clients[fd].is_logged = false;
+	s->clients[fd].name[0] = '\0';
+	s->clients[fd].msg[0] = '\0';
+
+	send(fd, "Enter Name:\n> ", 14, 0);
+	return (true);
 }
 
-void	send_to_all(t_server *server, int client_fd) {
-	for (int fd = 0; fd <= server->max_fd; fd++)
-		if (FD_ISSET(fd, &(server->write_fds)) && fd != client_fd)
-			if (send(fd, server->write_buffer, strlen(server->write_buffer), 0) == -1)
-				continue;
+
+void send_to_all(t_server *s, int sender_fd, char *msg) {
+	for (int fd = 0; fd <= s->max_fd; fd++) {
+		if (FD_ISSET(fd, &s->all_fds) && fd != sender_fd)
+			send(fd, msg, strlen(msg), 0);
+	}
 }
 
-void client_left(t_server *server, int client_fd) {
-	sprintf(server->write_buffer, CLIENT_LEFT_MSG, client_fd);
-	send_to_all(server, client_fd);
-	FD_CLR(client_fd, &(server->all_fds));
-	close(client_fd);
-	bzero(server->clients[client_fd].msg, BUFFER_SIZE);
+
+void send_to_client(int fd, char *msg) {
+    send(fd, msg, strlen(msg), 0);
 }
 
-void read_and_broadcast(t_server *server, int current_fd) {
-	int bytes_arrived = recv(current_fd, server->recv_buffer, BUFFER_SIZE, 0);
-	if (bytes_arrived <= 0)
-		client_left(server, current_fd);
-	else {
-		for (int i = 0, j = strlen(server->clients[current_fd].msg); i < bytes_arrived; i++, j++) {
-			server->clients[current_fd].msg[j] = server->recv_buffer[i];
-			if (server->clients[current_fd].msg[j] == '\n') {
-				server->clients[current_fd].msg[j] = 0;
-				sprintf(server->write_buffer, CLIENT_MSG, current_fd, server->clients[current_fd].msg);
-				send_to_all(server, current_fd);
-				j = -1;
-				bzero(server->clients[current_fd].msg, BUFFER_SIZE);
+
+bool recv_client_data(t_server *s, int fd, enum recv_flags flag)
+{
+	int n = recv(fd, s->recv_buffer, BUFFER_SIZE - 1, 0);
+	if (n <= 0) {
+		client_left(s, fd);
+		return false;
+	}
+
+	s->recv_buffer[n] = '\0';
+
+	/* ---- LOGIN PHASE ---- */
+	if (flag == DATA_RECV_NAME) {
+		int i = 0;
+		while (i < n && s->recv_buffer[i] != '\n' && i < MAX_NAME_SIZE - 1)
+		{
+			s->clients[fd].name[i] = s->recv_buffer[i];
+			i++;
+		}
+		s->clients[fd].name[i] = '\0';
+
+		if (s->clients[fd].name[0])
+		{
+			s->clients[fd].is_logged = true;
+			s->clients[fd].id = s->clients_count++;
+
+			snprintf(s->write_buffer, BUFFER_SIZE,
+				"server: [%s] joined\n", s->clients[fd].name);
+			send_to_all(s, fd, s->write_buffer);
+		}
+		return true;
+	}
+
+	/* ---- CHAT PHASE ---- */
+	if (flag == BROADCAST_MSG) {
+		for (int i = 0; i < n; i++) {
+			int j = strlen(s->clients[fd].msg);
+			s->clients[fd].msg[j] = s->recv_buffer[i];
+			s->clients[fd].msg[j + 1] = '\0';
+
+			if (s->recv_buffer[i] == '\n')
+			{
+				snprintf(s->write_buffer, BUFFER_SIZE,
+					"[%s]: %s",
+					s->clients[fd].name,
+					s->clients[fd].msg);
+
+				send_to_all(s, fd, s->write_buffer);
+				s->clients[fd].msg[0] = '\0';
 			}
 		}
 	}
+	return true;
+}
+
+
+
+void client_left(t_server *s, int fd)
+{
+	if (s->clients[fd].name[0])
+	{
+		snprintf(s->write_buffer, BUFFER_SIZE,
+			"server: [%s] left\n", s->clients[fd].name);
+		send_to_all(s, fd, s->write_buffer);
+	}
+
+	FD_CLR(fd, &s->all_fds);
+	close(fd);
+	s->clients[fd].is_logged = false;
+	s->clients[fd].name[0] = '\0';
+	s->clients[fd].msg[0] = '\0';
 }
