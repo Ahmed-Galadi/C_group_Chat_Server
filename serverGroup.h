@@ -39,12 +39,11 @@ typedef struct s_server {
 void	putstr(int fd, char *str);
 void	exit_error(char *err_msg, int max_fd);
 
-
 // ------------------- Server functions ----------
 
 t_server *server_init(int port);
-void send_to_all(t_server *server);
-void read_and_broadcast(t_server *server);
+void send_to_all(t_server *server, int client_fd);
+void read_and_broadcast(t_server *server, int fd);
 int  accept_client(t_server *server);
-
+void client_left(t_server *server, int client_fd);
 #endif

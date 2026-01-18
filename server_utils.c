@@ -34,16 +34,40 @@ int accept_client(t_server *server) {
 		server->max_fd = server->client_fd;
 	FD_SET(server->client_fd, &(server->all_fds));
 	server->clients[server->client_fd].id = (server->ids_count)++;
-	sprintf(server->write_buffer, CLIENT_ACCEPT_MSG, server->clients[server->client_fd].id);
-	send_to_all(server);
+	sprintf(server->write_buffer, CLIENT_ACCEPT_MSG, server->client_fd);
+	send_to_all(server, server->client_fd);
 	return (1);
 }
 
-void	send_to_all(t_server *server) {
+void	send_to_all(t_server *server, int client_fd) {
 	for (int fd = 0; fd <= server->max_fd; fd++)
-		if (FD_ISSET(fd, &(server->write_fds)) && fd != server->client_fd)
+		if (FD_ISSET(fd, &(server->write_fds)) && fd != client_fd)
 			if (send(fd, server->write_buffer, strlen(server->write_buffer), 0) == -1)
 				continue;
 }
 
+void client_left(t_server *server, int client_fd) {
+	sprintf(server->write_buffer, CLIENT_LEFT_MSG, client_fd);
+	send_to_all(server, client_fd);
+	FD_CLR(client_fd, &(server->all_fds));
+	close(client_fd);
+	bzero(server->clients[client_fd].msg, BUFFER_SIZE);
+}
 
+void read_and_broadcast(t_server *server, int current_fd) {
+	int bytes_arrived = recv(current_fd, server->recv_buffer, BUFFER_SIZE, 0);
+	if (bytes_arrived <= 0)
+		client_left(server, current_fd);
+	else {
+		for (int i = 0, j = strlen(server->clients[current_fd].msg); i < bytes_arrived; i++, j++) {
+			server->clients[current_fd].msg[j] = server->recv_buffer[i];
+			if (server->clients[current_fd].msg[j] == '\n') {
+				server->clients[current_fd].msg[j] = 0;
+				sprintf(server->write_buffer, CLIENT_MSG, current_fd, server->clients[current_fd].msg);
+				send_to_all(server, current_fd);
+				j = -1;
+				bzero(server->clients[current_fd].msg, BUFFER_SIZE);
+			}
+		}
+	}
+}

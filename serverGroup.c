@@ -12,8 +12,11 @@ int main(int argc, char *argv[]) {
 			continue;
 		for (int fd = 0; fd <= server->max_fd; fd++) {
 			if (!FD_ISSET(fd, &(server->read_fds))) continue;
-			if (fd == server->server_socket)
-				if (!accept_client(server)) continue;
+			if (fd == server->server_socket) {
+				if (!accept_client(server))
+					continue;
+			} else
+				read_and_broadcast(server, fd);
 		}
 	}
 	return (0);
