@@ -17,7 +17,7 @@
 # define BUFFER_SIZE 10024
 # define CLIENT_ACCEPT_MSG "server: [ %s ] just joined\n"
 # define CLIENT_LEFT_MSG "server: [ %s ] just left\n"
-# define CLIENT_MSG "[%s]: %s\n[YOU] => "
+# define CLIENT_MSG "[%s]: %s\n"
 # define MAX_NAME_SIZE 32
 # define MAX_PASSWORD_SIZE 24
 
@@ -29,7 +29,6 @@ typedef struct s_client {
 	char name[MAX_NAME_SIZE];
 	char msg[BUFFER_SIZE];
 	char password[MAX_PASSWORD_SIZE];
-	bool is_logged;
 	enum loggin_state state;
 } t_client;
 
