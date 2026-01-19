@@ -41,6 +41,7 @@ typedef struct s_server {
 	int server_socket;
 	fd_set read_fds, write_fds, all_fds;
 	t_client clients[MAX_CLIENTS];
+	int msgs_count;
 } t_server;
 
 // ------------------- Utils ---------------------

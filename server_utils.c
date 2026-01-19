@@ -29,6 +29,7 @@ t_server *server_init(int port)
 
 	s->max_fd = s->server_socket;
 	s->clients_count = 0;
+	s->msgs_count = 0;
 	return (s);
 }
 
@@ -96,7 +97,7 @@ void	client_auth(t_server *s, int client_fd, int bytes_read) {
 				s->clients[client_fd].id = s->clients_count++;
 				snprintf(s->write_buffer, BUFFER_SIZE, CLIENT_ACCEPT_MSG, s->clients[client_fd].name);
 				send_to_all(s, client_fd, s->write_buffer);
-				send_to_client(client_fd, "\n[you] => ");
+				send_to_client(client_fd, "\033[2J\033[H\n[you] => ");
 			}
 			return ;
 		}
@@ -129,11 +130,12 @@ bool recv_client_data(t_server *s, int fd)
 					s->clients[fd].msg);
 
 				send_to_all(s, fd, s->write_buffer);
+				(s->msgs_count)++;
 				s->clients[fd].msg[0] = '\0';
 			}
 		}
 	}
-	return true;
+	return (true);
 }
 
 
