@@ -4,7 +4,7 @@ static void print_client_data(t_server *s) {
 	for (int i = 0; i <= s->max_fd; i++) {
 		if (s->clients[i].name[0] != '\0' && s->clients[i].password[0] != '\0') {
 			t_client client = s->clients[i];
-			char *is_logged = client.state == LOGGED ? "true" : "false";
+			char *is_logged = client.state == LOGGED || client.state == INSIDE ? "true" : "false";
 			printf("{\n\tid: %d\n\tname: %s\n\tpassword: %s\n\tis_logged: %s\n}\n", client.id, client.name, client.password, is_logged);
 		}
 	}

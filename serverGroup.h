@@ -13,15 +13,29 @@
 #include <limits.h>
 #include <stdbool.h>
 
-# define MAX_CLIENTS 1024
+# define MAX_CLIENTS 256
 # define BUFFER_SIZE 10024
 # define CLIENT_ACCEPT_MSG "\n---------------------------------------------------\nserver: [ %s ] just joined\n---------------------------------------------------\n[you] => "
 # define CLIENT_LEFT_MSG "\n---------------------------------------------------\nserver: [ %s ] just left\n---------------------------------------------------\n[you] => "
 # define CLIENT_MSG "\n---------------------------------------------------\n[%s]: %s\n---------------------------------------------------\n[you] => "
 # define MAX_NAME_SIZE 32
 # define MAX_PASSWORD_SIZE 24
+# define MAX_MEMBERS 50
+# define MAX_ADMINS 3
+# define MAX_CLIENT_GRP 5
+# define GROUP_MAX 100
 
-enum loggin_state {WAITING_NAME, WAITING_PASS, LOGGED};
+enum e_state {WAITING_NAME, WAITING_PASS, LOGGED, INSIDE};
+
+typedef struct s_group {
+	int grpId;
+	char name[MAX_NAME_SIZE];
+	int members_ids[MAX_MEMBERS];
+	int admins_ids[MAX_ADMINS];
+	int members_count;
+	int admins_count;
+	int msgs_count;
+}	t_group;
 
 typedef struct s_client {
 	int id;
@@ -29,7 +43,11 @@ typedef struct s_client {
 	char name[MAX_NAME_SIZE];
 	char msg[BUFFER_SIZE];
 	char password[MAX_PASSWORD_SIZE];
-	enum loggin_state state;
+	enum e_state state;
+	int groups_id[MAX_CLIENT_GRP];
+	int groups_count;
+	int curr_grpId;
+	bool is_public;
 } t_client;
 
 typedef struct s_server {
@@ -41,6 +59,8 @@ typedef struct s_server {
 	int server_socket;
 	fd_set read_fds, write_fds, all_fds;
 	t_client clients[MAX_CLIENTS];
+	t_group Groups[GROUP_MAX];
+	int groups_count;
 	int msgs_count;
 } t_server;
 
@@ -58,5 +78,6 @@ void client_left(t_server *server, int client_fd);
 void send_to_client(int fd, char *msg);
 bool recv_client_data(t_server *server, int current_fd);
 void	client_auth(t_server *s, int client_fd, int bytes_read);
+void	createGroup();
 
 #endif
