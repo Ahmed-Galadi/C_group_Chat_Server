@@ -23,3 +23,14 @@ void createGroup(t_server *s, t_client *client, char *groupName) {
     (s->groups_count)++;
     (client->groups_count)++;
 }
+
+void goto_group(t_server *s, t_client *client, char *groupName) {
+    /*
+        - is there any group with that name in the clients [groups_id].
+        - check the admin list if the client is in the [admin_ids].
+        - check the [clients_id] if not found in [admin_ids].
+        - when found put the [grpId] in clients [curr_grpId].
+        - if not found write to the client a feedback error message.
+        - if client is admin write its name in defferent color when inside group.
+    */
+}
