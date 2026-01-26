@@ -32,6 +32,10 @@ void createGroup(t_server *s, t_client *client, char *groupName) {
     (client->groups_count)++;
 }
 
+bool is_member(t_server *s, t_client *c) {
+    
+}
+
 void goto_group(t_server *s, t_client *client, char *groupName) {
     // TO DO
     // step - 0
@@ -48,5 +52,7 @@ void goto_group(t_server *s, t_client *client, char *groupName) {
     }
     // step - 4
     setColorMsg(s, client);
-
+    // step - 5 => step - 6
+    sendJoinedFeedback(s, client);
+    // safety check
 }
