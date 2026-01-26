@@ -93,8 +93,6 @@ bool recv_client_data(t_server *s, int fd)
 	return (true);
 }
 
-
-
 void client_left(t_server *s, int fd)
 {
 	if (s->clients[fd].name[0])
@@ -106,8 +104,5 @@ void client_left(t_server *s, int fd)
 
 	FD_CLR(fd, &s->all_fds);
 	close(fd);
-	s->clients[fd].name[0] = '\0';
-	s->clients[fd].msg[0] = '\0';
-	s->clients[fd].msg[0] = '\0';
-	s->clients[fd].state = WAITING_NAME;
+	bzero(&s->clients[fd], sizeof(t_client));
 }
