@@ -120,3 +120,17 @@ t_client *getClientFD(t_server *s, int client_fd) {
 			return (&s->clients[i]);
 	return (NULL);
 }
+
+t_group *getGroupById(t_server *s, int grp_id) {
+	for (int i = 0; i < s->groups_count; i++) {
+		if (s->Groups[i].grpId == grp_id)
+			return (&s->Groups[i]);
+	}
+}
+
+t_group *getGroupByName(t_server *s, int grpName) {
+		for (int i = 0; i < s->groups_count; i++) {
+		if comp(s->Groups[i].name, grpName)
+			return (&s->Groups[i]);
+	}
+}
