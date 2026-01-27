@@ -1,6 +1,9 @@
 #ifndef SERVER_S_H
 # define SERVER_S_H
 
+#include "client_s.h"
+#include "group_s.h"
+
 // SERVER STRUCT
 typedef struct s_server {
 	char recv_buffer[BUFFER_SIZE];

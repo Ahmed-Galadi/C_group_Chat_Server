@@ -1,4 +1,4 @@
-#include "serverGroup.h"
+#include "../../serverGroup.h"
 
 bool accept_client(t_server *s)
 {
@@ -20,7 +20,6 @@ bool accept_client(t_server *s)
 	s->clients[fd].state = WAITING_NAME;
 	s->clients[fd].groups_count = 0;
 	s->clients[fd].curr_grpId = -1;
-	s->clients[fd].is_public = true;
 
 	send_to_client(fd, "Enter Name:\n> ");
 	return (true);

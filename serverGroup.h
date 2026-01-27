@@ -1,9 +1,6 @@
 #ifndef SERVERGROUP_H
 # define SERVERGROUP_H
 
-// STATE
-enum e_state {WAITING_NAME, WAITING_PASS, LOGGED, INSIDE};
-
 // INCLUDES
 #include <unistd.h>
 #include <stdio.h>

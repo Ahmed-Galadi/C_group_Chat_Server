@@ -17,6 +17,8 @@ void	client_auth(t_server *s, int client_fd, int bytes_read);
 // ---------------- groups -----------------------
 void	createGroup();
 // --------------- client ----------------------
+t_client *getClientById(t_server *s, int client_id);
+t_client *getClientFD(t_server *s, int client_fd);
 // ---------------- admin ----------------------
 
 #endif

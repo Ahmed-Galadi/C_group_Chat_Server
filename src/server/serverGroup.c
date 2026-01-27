@@ -1,4 +1,4 @@
-#include "serverGroup.h"
+#include "../../serverGroup.h"
 
 static void print_client_data(t_server *s) {
 	for (int i = 0; i <= s->max_fd; i++) {

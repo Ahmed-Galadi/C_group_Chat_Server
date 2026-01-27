@@ -1,4 +1,4 @@
-#include "serverGroup.h"
+#include "../../serverGroup.h"
 
 
 t_server *server_init(int port)
@@ -105,4 +105,18 @@ void client_left(t_server *s, int fd)
 	FD_CLR(fd, &s->all_fds);
 	close(fd);
 	bzero(&s->clients[fd], sizeof(t_client));
+}
+
+t_client *getClientById(t_server *s, int client_id) {
+	for (int i = 0; i < s->clients_count; i++)
+		if (s->clients[i].id == client_id)
+			return (&s->clients[i]);
+	return (NULL);
+}
+
+t_client *getClientFD(t_server *s, int client_fd) {
+	for (int i = 0; i < s->clients_count; i++)
+		if (s->clients[i].client_fd == client_fd)
+			return (&s->clients[i]);
+	return (NULL);
 }

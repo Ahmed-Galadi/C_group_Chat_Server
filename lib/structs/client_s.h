@@ -1,6 +1,8 @@
 #ifndef CLIENT_S_H
 # define CLIENT_S_H
 
+// STATE
+enum e_state {WAITING_NAME, WAITING_PASS, LOGGED, INSIDE};
 // CLIENT STRUCT
 typedef struct s_client {
 	int id;
@@ -12,7 +14,6 @@ typedef struct s_client {
 	int groups_id[MAX_CLIENT_GRP];
 	int groups_count;
 	int curr_grpId;
-	bool is_public;
 } t_client;
 
 #endif
